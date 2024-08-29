@@ -39,10 +39,10 @@ export default class MyPlugin extends Plugin {
 		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
 			id: 'sample-editor-command',
-			name: 'Sample editor command',
+			name: 'Sbample editor command',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
+				editor.replaceSelection('Sbample Editor Command');
 			}
 		});
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
@@ -122,7 +122,7 @@ class SampleSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setDesc("set that")
 			.addText(text => text
 				.setPlaceholder('Enter your secret')
 				.setValue(this.plugin.settings.mySetting)
@@ -132,3 +132,5 @@ class SampleSettingTab extends PluginSettingTab {
 				}));
 	}
 }
+// https://github.com/mProjectsCode/obsidian-meta-bind-plugin/blob/master/packages/core/src/fields/embed/EmbedMountable.ts#L68
+// https://github.com/mProjectsCode/obsidian-meta-bind-plugin/blob/4b16a75fb63dfdb34e3ccf2756a324a84dd8fd85/packages/obsidian/src/ObsidianInternalAPI.ts#L61

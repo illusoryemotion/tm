@@ -37,7 +37,7 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: "/data/data/com.termux/files/home/storage/shared/Documents/Obsidian/tm/.obsidian/plugins/tm/main.js",
 	minify: prod,
 });
 
