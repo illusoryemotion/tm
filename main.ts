@@ -263,7 +263,7 @@ class SampleSettingTab extends PluginSettingTab {
             )
             .addText(text => text
                 .setPlaceholder('Find (regex)')
-                .setValue(this.plugin.settings.regFindPattern)
+                .setValue(this.plugin.settings.regFindPatternString)
                 .onChange(async (value) => {
                     this.plugin.settings.regFindPatternString = value;
                     this.plugin.settings.regFindPattern = this.getRegex(value);
@@ -285,6 +285,7 @@ class SampleSettingTab extends PluginSettingTab {
                 .onClick(() => {
                     this.regReplaceQueue = this.plugin.app.vault.getMarkdownFiles();
                     this.mdFileCount = this.regReplaceQueue.length;
+                    this.regReplaced = 0;
                     this.notice = new Notice(
                         createFragment((e) => {
                             const container =
