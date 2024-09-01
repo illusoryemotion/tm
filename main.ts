@@ -184,6 +184,7 @@ class SampleSettingTab extends PluginSettingTab {
                 this.notice.setMessage(
                     `${this.regReplaced} files modified!`
                 );
+                console.info("tm:",`${this.regReplaced} files modified!`,this.regReplacedList);
             } else {
                 this.notice.setMessage(
                     `No matches found to replace.`
@@ -204,6 +205,7 @@ class SampleSettingTab extends PluginSettingTab {
             const pattern = this.plugin.settings.regFindPattern;
             const replacement = this.plugin.settings.regReplaceString;
             if (pattern.test(contents)) {
+                this.regReplacedList.push(file.basename);
                 this.regReplaced++;
                 this.notice.setMessage(`${this.regReplaceQueue.length} / ${this.mdFileCount} files left`);
                 await this.plugin.app.vault.modify(
@@ -286,6 +288,7 @@ class SampleSettingTab extends PluginSettingTab {
                     this.regReplaceQueue = this.plugin.app.vault.getMarkdownFiles();
                     this.mdFileCount = this.regReplaceQueue.length;
                     this.regReplaced = 0;
+                    this.regReplacedList = [];
                     this.notice = new Notice(
                         createFragment((e) => {
                             const container =
