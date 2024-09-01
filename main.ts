@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 
 export default class MyPlugin extends Plugin {
     settings: MyPluginSettings;
-    
+
     async onload() {
         await this.loadSettings();
         /*
@@ -44,7 +44,7 @@ export default class MyPlugin extends Plugin {
         const statusBarItemEl = this.addStatusBarItem();
         statusBarItemEl.setText('Status Bar Text');
         */
-        
+
         // This adds a simple command that can be triggered anywhere
         this.addCommand({
             id: 'open-sample-modal-simple',
@@ -75,13 +75,13 @@ export default class MyPlugin extends Plugin {
                     if (!checking) {
                         new SampleModal(this.app).open();
                     }
-                    
+
                     // This command will only show up in Command Palette when the check function returns true
                     return true;
                 }
             }
         });
-        
+
         /**
          * Add "delete attachment" command to editor menu
          */
@@ -89,41 +89,41 @@ export default class MyPlugin extends Plugin {
             this.app.workspace.on("editor-menu", (menu, editor, view) => {
                 menu.addItem((item) => {
                     item
-                    .setTitle("Debug Menu")
-                    .setIcon("document")
-                    .onClick(async () => {
-                        console.info(
-                            "Editor??", editor,
-                            "View!!",view,
-                            "Item!!", item,
-                            "menu!!", menu.items[2].callback.toString()
-                        );
-                    });
+                        .setTitle("Debug Menu")
+                        .setIcon("document")
+                        .onClick(async () => {
+                            console.info(
+                                "Editor??", editor,
+                                "View!!", view,
+                                "Item!!", item,
+                                "menu!!", menu.items[2].callback.toString()
+                            );
+                        });
                 });
             })
         );
-        
+
         // This adds a settings tab so the user can configure various aspects of the plugin
         this.addSettingTab(new SampleSettingTab(this.app, this));
-        
+
         // If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
         // Using this function will automatically remove the event listener when this plugin is disabled.
         this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
             console.log('click', evt);
         });
-        
+
         // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
         this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
     }
-    
+
     onunload() {
-        
+
     }
-    
+
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     }
-    
+
     async saveSettings() {
         await this.saveData(this.settings);
     }
@@ -133,27 +133,27 @@ class SampleModal extends Modal {
     constructor(app: App) {
         super(app);
     }
-    
+
     onOpen() {
-        const {contentEl} = this;
+        const { contentEl } = this;
         contentEl.setText('Woah!');
     }
-    
+
     onClose() {
-        const {contentEl} = this;
+        const { contentEl } = this;
         contentEl.empty();
     }
 }
 
 class SampleSettingTab extends PluginSettingTab {
     plugin: MyPlugin;
-    
+
     constructor(app: App, plugin: MyPlugin) {
         super(app, plugin);
         this.plugin = plugin;
-        this.converted = 0;
+        this.regReplaced = 0;
     }
-    
+
     /**
      * From Obsidian keyshots
      * https://github.com/KrazyManJ/obsidian-keyshots/tree/master/src
@@ -170,28 +170,28 @@ class SampleSettingTab extends PluginSettingTab {
         try {
             return new RegExp(
                 pattern,
-              //  `gm${this.case_sensitive ? "" : "i"}`
-              `gm`
+                //  `gm${this.case_sensitive ? "" : "i"}`
+                `gm`
             )
         } catch (SyntaxError) {
             return undefined
         }
     }
-    
+
     async checkAndReplace() {
-        if (!this.queue.length) {
-            if (this.converted) {
+        if (!this.regReplaceQueue.length) {
+            if (this.regReplaced) {
                 this.notice.setMessage(
-                    `${this.converted} MS-doc Admonitions converted!`
-                    );
+                    `${this.regReplaced} files modified!`
+                );
             } else {
                 this.notice.setMessage(
-                    `No MS-doc Admonitions found to convert. ${this.converted}`
-                    );
+                    `No matches found to replace.`
+                );
             }
             this.plugin.data.msDocConverted = true;
             this.plugin.saveSettings().then(() => this.display());
-            
+
             setTimeout(() => {
                 this.notice.hide();
                 this.notice = undefined;
@@ -199,90 +199,105 @@ class SampleSettingTab extends PluginSettingTab {
             return;
         }
         setTimeout(async () => {
-            const file = this.queue.shift();
+            const file = this.regReplaceQueue.shift();
             const contents = await this.app.vault.read(file);
-            if (/wemgex/.test(contents)) {
-                this.converted++;
-                this.notice.setMessage("Waaaaa");
+            const pattern = this.plugin.settings.regFindPattern;
+            const replacement = this.plugin.settings.regReplaceString;
+            if (pattern.test(contents)) {
+                this.regReplaced++;
+                this.notice.setMessage(`${this.regReplaceQueue.length} / ${this.mdFileCount} files left`);
                 await this.plugin.app.vault.modify(
                     file,
                     contents.replace(
-                        /wemgex/g,
-                        `wremgets`
-                        )
-                        );
+                        pattern,
+                        replacement
+                    )
+                );
             }
             this.checkAndReplace();
         });
     }
-    
-    
+
+
     display(): void {
-        const {containerEl} = this;
+        const { containerEl } = this;
         containerEl.empty();
-        new Setting(containerEl)
-        .setName('Setting #1')
-        .setDesc("set that")
-        .addText(text => text
-            .setPlaceholder('Enter your secret')
-            .setValue(this.plugin.settings.mySetting)
-            .onChange(async (value) => {
-                this.plugin.settings.mySetting = value;
-                await this.plugin.saveSettings();
-        }));
-        /*
-        * This function is adapted from Admonitions.
-        * Original source: https://github.com/javalent/admonitions/blob/main/src/settings.ts#L55.
-        *
-        * The original project is licensed under MIT License.
-        * 
-        * Author(s) of the original code: https://github.com/javalent.
-        */
         
+        /* Example setting 
         new Setting(containerEl)
-        .setName("Regex replace all notes")
-        .setDesc(
-            createFragment((e) => {
-                const text = e.createDiv("admonition-convert");
-                text.createSpan({
-                    text: "This "
-                });
-                text.createEl("strong", { text: "will" });
-                text.createSpan({
-                    text: " modify notes. Use at your own risk and please make backups."
-                });
-                e.createEl("p", {
-                    text: "With large vaults, this could take awhile!"
-                });
-            })
-        )
-        .addText(text => text
-            .setPlaceholder('Enter your balls')
-            .setValue(this.plugin.settings.mySetting)
-            .onChange(async (value) => {
-                this.plugin.settings.mySetting = value;
-                await this.plugin.saveSettings();
-            })
-        )
-        .addButton((b) =>
-            b
-            .setButtonText("Convert")
-            .setCta()
-            .onClick(() => {
-                this.queue = this.plugin.app.vault.getMarkdownFiles();
-                this.notice = new Notice(
-                    createFragment((e) => {
-                        const container =
-                        e.createDiv("admonition-convert");
-                        container.createSpan({
-                            text: "Converting MS-doc admonitions..."
-                        });
-                    }),
-                    0
-                );
-                this.checkAndReplace();
-            })
-        );
+            .setName('Setting #1')
+            .setDesc("set that")
+            .addText(text => text
+                .setPlaceholder('Enter your secret')
+                .setValue(this.plugin.settings.mySetting)
+                .onChange(async (value) => {
+                    this.plugin.settings.mySetting = value;
+                    await this.plugin.saveSettings();
+                }));
+        */
+        /*
+         * This function is adapted from Admonitions.
+         * Original source: https://github.com/javalent/admonitions/blob/main/src/settings.ts#L55.
+         *
+         * The original project is licensed under MIT License.
+         * 
+         * Author(s) of the original code: https://github.com/javalent.
+         */
+
+        new Setting(containerEl)
+            .setName("Regex replace all notes")
+            .setDesc(
+                createFragment((e) => {
+                    const text = e.createDiv("admonition-convert");
+                    text.createSpan({
+                        text: "This "
+                    });
+                    text.createEl("strong", { text: "will" });
+                    text.createSpan({
+                        text: " modify notes. Use at your own risk and please make backups."
+                    });
+                    e.createEl("p", {
+                        text: "With large vaults, this could take awhile!"
+                    });
+                })
+            )
+            .addText(text => text
+                .setPlaceholder('Find (regex)')
+                .setValue(this.plugin.settings.regFindPattern)
+                .onChange(async (value) => {
+                    this.plugin.settings.regFindPatternString = value;
+                    this.plugin.settings.regFindPattern = this.getRegex(value);
+                    await this.plugin.saveSettings();
+                })
+            )
+            .addText(text => text
+                .setPlaceholder('Replace with')
+                .setValue(this.plugin.settings.regReplaceString)
+                .onChange(async (value) => {
+                    this.plugin.settings.regReplaceString = value;
+                    await this.plugin.saveSettings();
+                })
+            )
+            .addButton((b) =>
+                b
+                .setButtonText("Replace")
+                .setCta()
+                .onClick(() => {
+                    this.regReplaceQueue = this.plugin.app.vault.getMarkdownFiles();
+                    this.mdFileCount = this.regReplaceQueue.length;
+                    this.notice = new Notice(
+                        createFragment((e) => {
+                            const container =
+                                e.createDiv("admonition-convert");
+                            container.createSpan({
+                                text: "Replacing..."
+                            });
+                        }),
+                        0
+                    );
+                    this.checkAndReplace();
+                })
+            );
     }
 }
 //
